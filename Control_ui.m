@@ -28,7 +28,7 @@ function varargout = Control_ui(varargin)
 
 % Edit the above text to modify the response to help Control_ui
 
-% Last Modified by GUIDE v2.5 23-Jun-2016 13:07:44
+% Last Modified by GUIDE v2.5 28-Jun-2016 18:12:06
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -146,7 +146,11 @@ t_ave = readT.Value;
 % Loops continuously while program is running
 while ~stoploop
     
-    % Read slider postion - desired mass flow rate
+    % Find constant offset
+    os = findobj('Tag','offset');
+    offset = str2double(os.String);
+    
+    % Read desired mass flow rate
     h = findobj('Tag','H_setpt');
     air = findobj('Tag','A_setpt');
     handles.H_set = str2double(h.String);
@@ -155,7 +159,11 @@ while ~stoploop
     % Read current flow - reads and averages for the specified time
     [handles.H_now, handles.A_now] = averageFlow(handles, t_ave);
     
-    % Update GUI data
+    % Apply offset to flow setpoint
+    handles.H_set = handles.H_set + offset;
+    handles.A_set = handles.A_set + offset;
+    
+    % Update handles
     guidata(hObject, handles);
     
     % Write current flow to UI
@@ -181,8 +189,7 @@ while ~stoploop
         writePWMVoltage(a, handles.HoutPin, flow2v(0));
         writePWMVoltage(a, handles.AoutPin, flow2v(0));
         % Write setpoint to UI
-        set(handles.H_setpt, 'String', num2str(0));
-        set(handles.A_setpt, 'String', num2str(0));
+        
         
     end
     pause(0.1);
@@ -681,6 +688,29 @@ function t_ave_Callback(hObject, eventdata, handles)
 % --- Executes during object creation, after setting all properties.
 function t_ave_CreateFcn(hObject, eventdata, handles)
 % hObject    handle to t_ave (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+function offset_Callback(hObject, eventdata, handles)
+% hObject    handle to offset (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of offset as text
+%        str2double(get(hObject,'String')) returns contents of offset as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function offset_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to offset (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
 
