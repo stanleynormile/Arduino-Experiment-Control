@@ -159,8 +159,8 @@ while ~stoploop
     guidata(hObject, handles);
     
     % Write current flow to UI
-    set(handles.H_flow_now, 'String', round(num2str(handles.H_now)));
-    set(handles.A_flow_now, 'String', round(num2str(handles.A_now)));
+    set(handles.H_flow_now, 'String', num2str(round(handles.H_now)));
+    set(handles.A_flow_now, 'String', num2str(round(handles.A_now)));
     
     % Write Data to file
     % handles.nextCell tell the program where in the xls file to begin writing
