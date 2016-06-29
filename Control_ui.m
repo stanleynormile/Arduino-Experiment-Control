@@ -3,6 +3,9 @@
 % Written by Stanley Normile
 % User interface code generated using Matlab GUIDE
 
+% Copyright (c) 2016 stanleynormile
+% Distributed under MIT License
+
 % Initialization Function - Auto Generated
 function varargout = Control_ui(varargin)
 % CONTROL_UI MATLAB code for Control_ui.fig
@@ -19,7 +22,7 @@ function varargout = Control_ui(varargin)
 %      existing singleton*.  Starting from the left, property value pairs are
 %      applied to the GUI before Control_ui_OpeningFcn gets called.  An
 %      unrecognized property name or invalid value makes property application
-%      stop.  All inputs are passed to Control_ui_OpeningFcn via varargin.
+%      stop_flow.  All inputs are passed to Control_ui_OpeningFcn via varargin.
 %
 %      *See GUI Options on GUIDE's Tools menu.  Choose "GUI allows only one
 %      instance to run (singleton)".
@@ -28,7 +31,7 @@ function varargout = Control_ui(varargin)
 
 % Edit the above text to modify the response to help Control_ui
 
-% Last Modified by GUIDE v2.5 23-Jun-2016 13:07:44
+% Last Modified by GUIDE v2.5 29-Jun-2016 12:28:08
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -146,7 +149,11 @@ t_ave = readT.Value;
 % Loops continuously while program is running
 while ~stoploop
     
-    % Read slider postion - desired mass flow rate
+    % Find constant offset
+    os = findobj('Tag','offset');
+    offset = str2double(os.String);
+    
+    % Read desired mass flow rate
     h = findobj('Tag','H_setpt');
     air = findobj('Tag','A_setpt');
     handles.H_set = str2double(h.String);
@@ -155,7 +162,11 @@ while ~stoploop
     % Read current flow - reads and averages for the specified time
     [handles.H_now, handles.A_now] = averageFlow(handles, t_ave);
     
-    % Update GUI data
+    % Apply offset to flow setpoint
+    handles.H_set = handles.H_set + offset;
+    handles.A_set = handles.A_set + offset;
+    
+    % Update handles
     guidata(hObject, handles);
     
     % Write current flow to UI
@@ -172,19 +183,30 @@ while ~stoploop
     writePWMVoltage(a, handles.HoutPin, flow2v(handles.H_set));
     writePWMVoltage(a, handles.AoutPin, flow2v(handles.A_set));
 
-    % Check for stop condition
-    s = findobj('Tag','stop');
-    c = findobj('Tag','close');
-    if s.Value ~= 0 || c.Value ~= 0
-        stoploop = true;
-        % Write zero flow
+    % Check for stop flow condition
+    s = findobj('Tag','stop_flow');
+    if s.Value == 1
+        % Stop flow
         writePWMVoltage(a, handles.HoutPin, flow2v(0));
         writePWMVoltage(a, handles.AoutPin, flow2v(0));
-        % Write setpoint to UI
+        
+        % Write zero to UI
         set(handles.H_setpt, 'String', num2str(0));
         set(handles.A_setpt, 'String', num2str(0));
         
+        % Unlatch button
+        s.Value = 0;
     end
+    
+    % Check for stop and close condition
+    c = findobj('Tag','close');
+    if c.Value == 1
+        stoploop = true;
+        % Write zero flow
+        writePWMVoltage(a, handles.HoutPin, flow2v(0));
+        writePWMVoltage(a, handles.AoutPin, flow2v(0));       
+    end
+    
     pause(0.1);
 end
 
@@ -311,14 +333,16 @@ function run_Callback(hObject, eventdata, handles)
 % hObject    handle to run (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-stop = findobj('Tag', 'stop');
+stop = findobj('Tag', 'stop_flow');
 stop.Enable = 'on';
+run_button = findobj('Tag','run');
+run_button.Enable = 'off';
 ArduinoControl(hObject, handles)
 
 
-% --- Executes on button press in stop.
-function stop_Callback(hObject, eventdata, handles)
-% hObject    handle to stop (see GCBO)
+% --- Executes on button press in stop_flow.
+function stop_flow_Callback(hObject, eventdata, handles)
+% hObject    handle to stop_flow (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
@@ -681,6 +705,29 @@ function t_ave_Callback(hObject, eventdata, handles)
 % --- Executes during object creation, after setting all properties.
 function t_ave_CreateFcn(hObject, eventdata, handles)
 % hObject    handle to t_ave (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+function offset_Callback(hObject, eventdata, handles)
+% hObject    handle to offset (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of offset as text
+%        str2double(get(hObject,'String')) returns contents of offset as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function offset_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to offset (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
 
